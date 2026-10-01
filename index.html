@@ -319,6 +319,55 @@
 
   #menu, #pedido-mesa, #pedido-domicilio, #porque{ scroll-margin-top: 100px; }
 
+  /* ---------- ANIMACIONES ---------- */
+  @keyframes bajarHeader{ from{ transform: translateY(-100%); opacity: 0; } to{ transform: none; opacity: 1; } }
+  @keyframes zoomFoto{ from{ transform: scale(1.08); opacity: 0; } to{ transform: scale(1); opacity: 1; } }
+  @keyframes subirTexto{ from{ transform: translateY(30px); opacity: 0; } to{ transform: none; opacity: 1; } }
+  @keyframes flotar{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-8px); } }
+  @keyframes latido{ 0%,100%{ transform: scale(1); } 15%{ transform: scale(1.15); } 30%{ transform: scale(1); } 45%{ transform: scale(1.1); } }
+  @keyframes brillo{ from{ background-position: 0% 50%; } to{ background-position: 200% 50%; } }
+  @keyframes pulso{ 0%{ box-shadow: 0 0 0 0 rgba(17,17,17,.45); } 70%{ box-shadow: 0 0 0 16px rgba(17,17,17,0); } 100%{ box-shadow: 0 0 0 0 rgba(17,17,17,0); } }
+  @keyframes pop{ 0%{ transform: scale(1); } 50%{ transform: scale(1.12); } 100%{ transform: scale(1); } }
+
+  header{ animation: bajarHeader .7s ease-out both; }
+  .hero-foto{ animation: zoomFoto 1.2s cubic-bezier(.2,.7,.2,1) both; }
+  .hero-texto h1{ animation: subirTexto .8s .5s ease-out both; }
+  .hero-texto p{ animation: subirTexto .8s .7s ease-out both; }
+  .hero-texto .badge{ animation: subirTexto .6s ease-out both; }
+  .hero-texto .badge:nth-child(1){ animation-delay: .9s; }
+  .hero-texto .badge:nth-child(2){ animation-delay: 1.05s; }
+  .hero-texto .badge:nth-child(3){ animation-delay: 1.2s; }
+
+  .porque .marca, .section-title h2.gradient-text{
+    background-image: linear-gradient(90deg, var(--rojo), var(--naranja), var(--rojo));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: brillo 4s linear infinite;
+  }
+
+  .razon .circulo svg{ animation: flotar 3.2s ease-in-out infinite; }
+  .razon:nth-child(2) .circulo svg{ animation-delay: .4s; }
+  .razon:nth-child(3) .circulo svg{ animation-delay: .8s; }
+  .razon:nth-child(4) .circulo svg{ animation: latido 1.6s ease-in-out infinite; }
+
+  .domicilios-cta h2{ display: inline-block; }
+  .btn-domicilio{ animation: pulso 2s infinite; }
+  .total-line.pop{ animation: pop .35s ease; }
+  .plato img{ transition: transform .5s ease; }
+  .plato:hover img{ transform: scale(1.08); }
+
+  /* Aparecer al hacer scroll */
+  .reveal{ opacity: 0; transform: translateY(40px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.2,1); }
+  .reveal.visible{ opacity: 1; transform: none; }
+  .plato.reveal.visible:hover{ transform: translateY(-8px); transition: transform .25s ease, box-shadow .25s ease; }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation: none !important; transition: none !important; }
+    .reveal{ opacity: 1; transform: none; }
+  }
+
   @media (max-width: 760px){
     header{ justify-content: center; text-align: center; }
     nav{ justify-content: center; }
@@ -561,6 +610,35 @@
     document.querySelector('header').classList.toggle('scrolled', window.scrollY > 10);
   });
 
+  // Animación: los elementos aparecen al hacer scroll (con pequeño retraso escalonado)
+  const elementosReveal = document.querySelectorAll('.porque h2, .razon, .section-title, .plato, .form-card, .domicilios-cta > *');
+  elementosReveal.forEach(el => el.classList.add('reveal'));
+  [document.querySelectorAll('.razon'), document.querySelectorAll('.plato'), document.querySelectorAll('.domicilios-cta > *')].forEach(grupo => {
+    grupo.forEach((el, i) => el.style.transitionDelay = (i * 0.12) + 's');
+  });
+  if('IntersectionObserver' in window){
+    const observador = new IntersectionObserver(entradas => {
+      entradas.forEach(entrada => {
+        if(entrada.isIntersecting){
+          entrada.target.classList.add('visible');
+          observador.unobserve(entrada.target);
+          setTimeout(() => entrada.target.style.transitionDelay = '', 1500);
+        }
+      });
+    }, { threshold: 0.15 });
+    elementosReveal.forEach(el => observador.observe(el));
+  } else {
+    elementosReveal.forEach(el => el.classList.add('visible'));
+  }
+
+  // Animación: el total "salta" cuando cambia
+  function animarTotal(id){
+    const el = document.getElementById(id);
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+  }
+
   // Cambia este número por el WhatsApp real del restaurante (formato: codigo pais + numero, sin + ni espacios)
   const WHATSAPP_NUMERO = "573000000000";
   const PRECIO_PLATO = 10000;
@@ -572,6 +650,7 @@
   function actualizarTotal(checkboxSelector, totalElementId){
     const marcados = document.querySelectorAll(checkboxSelector + ':checked').length;
     document.getElementById(totalElementId).textContent = 'Total: $' + formatoPesos(marcados * PRECIO_PLATO);
+    animarTotal(totalElementId);
   }
 
   function resaltarOpcion(checkbox){
